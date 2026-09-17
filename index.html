@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Mancing Mania Emoji</title>
+    <meta name="description" content="Game web memancing seru bertema emoji dengan ayunan pendulum kail, aneka jenis ikan, dan grafis canvas responsif." />
+    <meta property="og:title" content="Mancing Mania Emoji" />
+    <meta property="og:description" content="Game web memancing seru bertema emoji dengan ayunan pendulum kail, aneka jenis ikan, dan grafis canvas responsif." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+
+      body {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #0c4a6e;
+        color: #0f172a;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        touch-action: none;
+      }
+
+      /* Game Wrapper - Mobile First & Centered on Desktop */
+      #game-container {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        height: 100%;
+        max-height: 920px;
+        background: #0284c7;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      }
+
+      @media (min-width: 640px) {
+        #game-container {
+          height: 94vh;
+          border-radius: 24px;
+          border: 4px solid #38bdf8;
+        }
+      }
+
+      /* Top Header Status Bar */
+      #game-header {
+        position: relative;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        padding: 10px 14px;
+        box-shadow: 0 4px 12px rgba(2, 44, 34, 0.08);
+        border-bottom: 2px solid #bae6fd;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .header-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .game-branding {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .game-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #0369a1;
+        letter-spacing: -0.3px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .game-title span.badge {
+        font-size: 10px;
+        font-weight: 700;
+        background: #e0f2fe;
+        color: #0284c7;
+        padding: 2px 6px;
+        border-radius: 999px;
+        text-transform: uppercase;
+      }
+
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-icon {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        color: #0369a1;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.1s ease, background-color 0.15s ease;
+      }
+
+      .btn-icon:active {
+        transform: scale(0.92);
+        background: #e0f2fe;
+      }
+
+      /* Stats Row */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+      }
+
+      .stat-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 6px 8px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-value {
+        font-size: 19px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.2;
+        transition: transform 0.2s ease, color 0.2s ease;
+      }
+
+      .stat-card.timer-critical .stat-value {
+        color: #ef4444;
+        animation: pulseWarning 0.8s infinite;
+      }
+
+      .stat-card.score-pulse .stat-value {
+        transform: scale(1.25);
+        color: #0284c7;
+      }
+
+      @keyframes pulseWarning {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.12); }
+      }
+
+      /* Canvas Stage */
+      #canvas-wrapper {
+        position: relative;
+        flex: 1;
+        width: 100%;
+        overflow: hidden;
+        cursor: pointer;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+
+      /* Instructions Banner (Fades out after first tap) */
+      #hint-overlay {
+        position: absolute;
+        top: 28%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.85);
+        color: #ffffff;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: -0.2px;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        transition: opacity 0.5s ease;
+        animation: bounceFloat 1.8s infinite ease-in-out;
+        white-space: nowrap;
+        z-index: 5;
+      }
+
+      @keyframes bounceFloat {
+        0%, 100% { transform: translate(-50%, 0); }
+        50% { transform: translate(-50%, -6px); }
+      }
+
+      /* Modal Overlay: Game Over */
+      #game-over-modal {
+        position: absolute;
+        inset: 0;
+        background: rgba(3, 23, 42, 0.8);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 50;
+        padding: 20px;
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      .modal-card {
+        background: #ffffff;
+        width: 100%;
+        max-width: 360px;
+        border-radius: 24px;
+        padding: 28px 24px;
+        text-align: center;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        border: 2px solid #e0f2fe;
+      }
+
+      .modal-trophy {
+        font-size: 52px;
+        margin-bottom: 8px;
+        line-height: 1;
+        display: inline-block;
+        animation: trophyWiggle 1s ease-in-out infinite alternate;
+      }
+
+      @keyframes trophyWiggle {
+        0% { transform: rotate(-8deg); }
+        100% { transform: rotate(8deg); }
+      }
+
+      .modal-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+
+      .modal-subtitle {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 18px;
+      }
+
+      .modal-score-box {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 2px solid #bae6fd;
+        border-radius: 18px;
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+
+      .modal-score-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #0284c7;
+        letter-spacing: 0.5px;
+      }
+
+      .modal-score-value {
+        font-size: 42px;
+        font-weight: 800;
+        color: #0369a1;
+        line-height: 1.1;
+      }
+
+      .high-score-badge {
+        display: inline-block;
+        margin-top: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #d97706;
+        background: #fef3c7;
+        padding: 3px 10px;
+        border-radius: 999px;
+      }
+
+      /* Fish Breakdown Table */
+      .catch-breakdown {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        margin-bottom: 20px;
+      }
+
+      .fish-badge {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 6px 2px;
+      }
+
+      .fish-badge .emoji {
+        font-size: 20px;
+        display: block;
+      }
+
+      .fish-badge .count {
+        font-size: 12px;
+        font-weight: 700;
+        color: #334155;
+      }
+
+      .fish-badge .pts {
+        font-size: 9px;
+        font-weight: 600;
+        color: #0284c7;
+      }
+
+      /* Play Again Button */
+      .btn-restart {
+        width: 100%;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 16px;
+        padding: 14px 20px;
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 10px 20px -5px rgba(2, 132, 199, 0.5);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .btn-restart:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 24px -5px rgba(2, 132, 199, 0.6);
+      }
+
+      .btn-restart:active {
+        transform: translateY(1px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container">
+      <!-- Status Bar UI Header -->
+      <header id="game-header">
+        <div class="header-top-row">
+          <div class="game-branding">
+            <div class="game-title" id="app-title">
+              🎣 Mancing Mania <span class="badge">Emoji</span>
+            </div>
+          </div>
+          <div class="header-controls">
+            <button id="sound-btn" class="btn-icon" aria-label="Toggle Sound" title="Suara Nyala/Mati">
+              🔊
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card" id="card-score">
+            <div class="stat-label">Skor</div>
+            <div class="stat-value" id="score-display">0</div>
+          </div>
+          <div class="stat-card" id="card-timer">
+            <div class="stat-label">Sisa Waktu</div>
+            <div class="stat-value" id="time-display">60s</div>
+          </div>
+          <div class="stat-card" id="card-catches">
+            <div class="stat-label">Tangkapan</div>
+            <div class="stat-value" id="catch-display">0</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Canvas Stage for Mobile Game -->
+      <div id="canvas-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div id="hint-overlay">
+          <span>👆</span> Ketuk layar untuk melontarkan kail!
+        </div>
+      </div>
+
+      <!-- Pop-up Overlay: GAME OVER -->
+      <div id="game-over-modal">
+        <div class="modal-card">
+          <div class="modal-trophy" id="modal-icon">🏆</div>
+          <h2 class="modal-title">WAKTU HABIS!</h2>
+          <p class="modal-subtitle">Petualangan mancingmu telah selesai</p>
+
+          <div class="modal-score-box">
+            <div class="modal-score-label">Skor Akhir Kamu</div>
+            <div class="modal-score-value" id="final-score">0</div>
+            <div class="high-score-badge" id="high-score-badge">Rekor Terbaik: 0</div>
+          </div>
+
+          <div class="catch-breakdown">
+            <div class="fish-badge">
+              <span class="emoji">🐟</span>
+              <span class="count" id="count-fish-1">0</span>
+              <span class="pts">10p</span>
+            </div>
+            <div class="fish-badge">
+              <span class="emoji">🐠</span>
+              <span class="count" id="count-fish-2">0</span>
+              <span class="pts">15p</span>
+            </div>
+            <div class="fish-badge">
+              <span class="emoji">🐡</span>
+              <span class="count" id="count-fish-3">0</span>
+              <span class="pts">25p</span>
+            </div>
+            <div class="fish-badge">
+              <span class="emoji">🦈</span>
+              <span class="count" id="count-fish-4">0</span>
+              <span class="pts">50p</span>
+            </div>
+          </div>
+
+          <button id="restart-btn" class="btn-restart">
+            <span>🎣</span> Mancing Lagi!
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pure JavaScript Game Logic Engine -->
+    <script>
+      (function () {
+        'use strict';
+
+        // --- Sound Effects Synthesizer (Web Audio API) ---
+        let audioCtx = null;
+        let isSoundEnabled = true;
+
+        function getAudioContext() {
+          if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+              audioCtx = new AudioContextClass();
+            }
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          return audioCtx;
+        }
+
+        const Sound = {
+          playCast() {
+            if (!isSoundEnabled) return;
+            try {
+              const ctx = getAudioContext();
+              if (!ctx) return;
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(600, ctx.currentTime);
+              osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.18);
+              gain.gain.setValueAtTime(0.2, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start();
+              osc.stop(ctx.currentTime + 0.2);
+            } catch (e) {
+              /* ignore audio errors */
+            }
+          },
+
+          playHookHit() {
+            if (!isSoundEnabled) return;
+            try {
+              const ctx = getAudioContext();
+              if (!ctx) return;
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(320, ctx.currentTime);
+              osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.12);
+              gain.gain.setValueAtTime(0.25, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.14);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start();
+              osc.stop(ctx.currentTime + 0.15);
+            } catch (e) {}
+          },
+
+          playCatchScore(points) {
+            if (!isSoundEnabled) return;
+            try {
+              const ctx = getAudioContext();
+              if (!ctx) return;
+              const now = ctx.currentTime;
+              const notes = points >= 50 ? [523.25, 659.25, 783.99, 1046.5] : [587.33, 880];
+              notes.forEach((freq, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + idx * 0.08);
+                osc.stop(now + idx * 0.08 + 0.22);
+              });
+            } catch (e) {}
+          },
+
+          playGameOver() {
+            if (!isSoundEnabled) return;
+            try {
+              const ctx = getAudioContext();
+              if (!ctx) return;
+              const now = ctx.currentTime;
+              const fanfares = [440, 415, 392, 349.23];
+              fanfares.forEach((freq, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+                gain.gain.setValueAtTime(0.22, now + idx * 0.14);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.14 + 0.28);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + idx * 0.14);
+                osc.stop(now + idx * 0.14 + 0.3);
+              });
+            } catch (e) {}
+          },
+
+          playMiss() {
+            if (!isSoundEnabled) return;
+            try {
+              const ctx = getAudioContext();
+              if (!ctx) return;
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(200, ctx.currentTime);
+              osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.12);
+              gain.gain.setValueAtTime(0.12, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start();
+              osc.stop(ctx.currentTime + 0.13);
+            } catch (e) {}
+          }
+        };
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
+        const scoreDisplay = document.getElementById('score-display');
+        const timeDisplay = document.getElementById('time-display');
+        const catchDisplay = document.getElementById('catch-display');
+        const cardTimer = document.getElementById('card-timer');
+        const cardScore = document.getElementById('card-score');
+        const hintOverlay = document.getElementById('hint-overlay');
+        const soundBtn = document.getElementById('sound-btn');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const highScoreBadge = document.getElementById('high-score-badge');
+        const restartBtn = document.getElementById('restart-btn');
+        const modalIcon = document.getElementById('modal-icon');
+
+        const countFish1 = document.getElementById('count-fish-1');
+        const countFish2 = document.getElementById('count-fish-2');
+        const countFish3 = document.getElementById('count-fish-3');
+        const countFish4 = document.getElementById('count-fish-4');
+
+        // --- Fish Definitions (Species & Scoring) ---
+        const FISH_TYPES = [
+          {
+            id: 'fish1',
+            emoji: '🐟',
+            name: 'Ikan Teri',
+            points: 10,
+            baseSpeed: 90,
+            speedVariance: 40,
+            size: 26,
+            hitRadius: 18,
+            minDepthRatio: 0.15,
+            maxDepthRatio: 0.6,
+            rarity: 0.4
+          },
+          {
+            id: 'fish2',
+            emoji: '🐠',
+            name: 'Ikan Tropis',
+            points: 15,
+            baseSpeed: 110,
+            speedVariance: 50,
+            size: 28,
+            hitRadius: 20,
+            minDepthRatio: 0.25,
+            maxDepthRatio: 0.75,
+            rarity: 0.3
+          },
+          {
+            id: 'fish3',
+            emoji: '🐡',
+            name: 'Ikan Buntal',
+            points: 25,
+            baseSpeed: 140,
+            speedVariance: 60,
+            size: 32,
+            hitRadius: 22,
+            minDepthRatio: 0.4,
+            maxDepthRatio: 0.9,
+            rarity: 0.2
+          },
+          {
+            id: 'fish4',
+            emoji: '🦈',
+            name: 'Hiu Ganas',
+            points: 50,
+            baseSpeed: 180,
+            speedVariance: 70,
+            size: 42,
+            hitRadius: 28,
+            minDepthRatio: 0.55,
+            maxDepthRatio: 0.95,
+            rarity: 0.1
+          }
+        ];
+
+        // --- Game State Variables ---
+        let viewWidth = 360;
+        let viewHeight = 600;
+        let dpr = window.devicePixelRatio || 1;
+        let waterLineY = 120; // Y boundary between sky and sea
+
+        let isRunning = false;
+        let isFirstTapDone = false;
+        let gameTime = 60; // 60 seconds game
+        let score = 0;
+        let totalCatches = 0;
+        let caughtCounts = { fish1: 0, fish2: 0, fish3: 0, fish4: 0 };
+        let highScore = parseInt(localStorage.getItem('mancing_mania_high_score') || '0', 10);
+
+        // Boat Properties
+        const boat = {
+          x: 180,
+          y: 112,
+          emoji: '⛵',
+          size: 52,
+          bobOffset: 0,
+          tiltAngle: 0,
+          rodOffsetX: 8,
+          rodOffsetY: -2
+        };
+
+        // Hook & Fishing Line States
+        const HOOK_STATE = {
+          SWINGING: 0,
+          SHOOTING: 1,
+          RETRACTING: 2
+        };
+
+        const hook = {
+          state: HOOK_STATE.SWINGING,
+          angle: 0, // In radians
+          maxAngle: 1.15, // ~66 degrees swing amplitude
+          swingSpeed: 2.2, // Rad/s
+          swingTimer: 0,
+          initialLength: 36,
+          length: 36,
+          maxLength: 800,
+          shootSpeed: 520, // Pixels per second descent
+          retractSpeedBase: 420, // Pixels per second ascent
+          tipX: 0,
+          tipY: 0,
+          caughtFish: null
+        };
+
+        // Entities
+        let fishes = [];
+        let particles = [];
+        let bubbles = [];
+        let floatingScores = [];
+
+        // --- Canvas Sizing & High-DPI Adaptation ---
+        function resizeCanvas() {
+          const rect = canvasWrapper.getBoundingClientRect();
+          viewWidth = Math.floor(rect.width);
+          viewHeight = Math.floor(rect.height);
+          dpr = window.devicePixelRatio || 1;
+
+          canvas.width = Math.floor(viewWidth * dpr);
+          canvas.height = Math.floor(viewHeight * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          waterLineY = Math.floor(viewHeight * 0.2); // ~20% top sky, 80% water
+          boat.x = viewWidth * 0.5;
+          boat.y = waterLineY - 8;
+          hook.maxLength = Math.hypot(viewWidth, viewHeight);
+        }
+
+        // --- Fish Management ---
+        function createFish(forceSide) {
+          const rand = Math.random();
+          let selectedType = FISH_TYPES[0];
+          let cumulative = 0;
+          for (let type of FISH_TYPES) {
+            cumulative += type.rarity;
+            if (rand <= cumulative) {
+              selectedType = type;
+              break;
+            }
+          }
+
+          const waterHeight = viewHeight - waterLineY - 40;
+          const targetY = waterLineY + 25 + Math.random() * waterHeight * (selectedType.maxDepthRatio - selectedType.minDepthRatio) + (waterHeight * selectedType.minDepthRatio);
+
+          const swimDirection = forceSide !== undefined ? forceSide : (Math.random() > 0.5 ? 1 : -1);
+          const startX = swimDirection === 1 ? -50 : viewWidth + 50;
+          const speed = selectedType.baseSpeed + (Math.random() * selectedType.speedVariance);
+
+          return {
+            type: selectedType,
+            x: startX,
+            y: targetY,
+            baseY: targetY,
+            vx: speed * swimDirection,
+            direction: swimDirection,
+            swimFreq: 2 + Math.random() * 2,
+            swimAmp: 4 + Math.random() * 6,
+            swimPhase: Math.random() * Math.PI * 2,
+            wobble: 0,
+            isHooked: false
+          };
+        }
+
+        function populateInitialFish() {
+          fishes = [];
+          const count = Math.min(10, Math.max(6, Math.floor(viewHeight / 60)));
+          for (let i = 0; i < count; i++) {
+            const f = createFish();
+            // Scatter across screen width initially
+            f.x = 20 + Math.random() * (viewWidth - 40);
+            fishes.push(f);
+          }
+        }
+
+        function initBubbles() {
+          bubbles = [];
+          const count = 16;
+          for (let i = 0; i < count; i++) {
+            bubbles.push({
+              x: Math.random() * viewWidth,
+              y: waterLineY + Math.random() * (viewHeight - waterLineY),
+              radius: 1.5 + Math.random() * 3.5,
+              speed: 25 + Math.random() * 40,
+              wobbleSpeed: 2 + Math.random() * 3,
+              wobbleAmp: 10 + Math.random() * 15,
+              phase: Math.random() * Math.PI * 2
+            });
+          }
+        }
+
+        // --- Particle & Floating Text Systems ---
+        function spawnCatchSplash(x, y, count = 12) {
+          const colors = ['#38bdf8', '#7dd3fc', '#facc15', '#ffffff'];
+          for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 40 + Math.random() * 120;
+            particles.push({
+              x,
+              y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              radius: 2 + Math.random() * 3,
+              color: colors[Math.floor(Math.random() * colors.length)],
+              alpha: 1,
+              decay: 1.4 + Math.random() * 1.5
+            });
+          }
+        }
+
+        function spawnFloatingScore(x, y, text, color = '#facc15') {
+          floatingScores.push({
+            x,
+            y,
+            text,
+            color,
+            alpha: 1,
+            vy: -45,
+            scale: 1.4
+          });
+        }
+
+        // --- Core Game Controls ---
+        function triggerHookLaunch() {
+          if (!isRunning) return;
+
+          if (!isFirstTapDone) {
+            isFirstTapDone = true;
+            if (hintOverlay) {
+              hintOverlay.style.opacity = '0';
+              setTimeout(() => {
+                if (hintOverlay) hintOverlay.style.display = 'none';
+              }, 500);
+            }
+          }
+
+          // Trigger audio context unlock on user interaction
+          getAudioContext();
+
+          // Only launch if hook is currently swinging
+          if (hook.state === HOOK_STATE.SWINGING) {
+            hook.state = HOOK_STATE.SHOOTING;
+            Sound.playCast();
+          }
+        }
+
+        // --- Game Lifecycle & State Updates ---
+        let lastTime = performance.now();
+        let secondTimer = 0;
+
+        function updateGame(dt) {
+          if (!isRunning) return;
+
+          // 1. Countdown Timer (dt in seconds)
+          secondTimer += dt;
+          if (secondTimer >= 1.0) {
+            secondTimer -= 1.0;
+            gameTime = Math.max(0, gameTime - 1);
+            timeDisplay.textContent = gameTime + 's';
+
+            if (gameTime <= 10) {
+              cardTimer.classList.add('timer-critical');
+            } else {
+              cardTimer.classList.remove('timer-critical');
+            }
+
+            if (gameTime <= 0) {
+              endGame();
+              return;
+            }
+          }
+
+          // 2. Boat Bobbing & Wave Dynamics
+          const now = performance.now() * 0.001;
+          boat.bobOffset = Math.sin(now * 2.8) * 3.5;
+          boat.tiltAngle = Math.cos(now * 2.8) * 0.035;
+
+          const anchorX = boat.x + boat.rodOffsetX;
+          const anchorY = boat.y + boat.rodOffsetY + boat.bobOffset;
+
+          // 3. Hook State Machine
+          if (hook.state === HOOK_STATE.SWINGING) {
+            hook.swingTimer += dt * hook.swingSpeed;
+            hook.angle = Math.sin(hook.swingTimer) * hook.maxAngle;
+            hook.length = hook.initialLength;
+
+            hook.tipX = anchorX + Math.sin(hook.angle) * hook.length;
+            hook.tipY = anchorY + Math.cos(hook.angle) * hook.length;
+          } else if (hook.state === HOOK_STATE.SHOOTING) {
+            // Lengthen along launch angle
+            hook.length += hook.shootSpeed * dt;
+            hook.tipX = anchorX + Math.sin(hook.angle) * hook.length;
+            hook.tipY = anchorY + Math.cos(hook.angle) * hook.length;
+
+            // Check boundary limits (bottom or sides)
+            const margin = 20;
+            const reachedBottom = hook.tipY >= viewHeight - margin;
+            const reachedSide = hook.tipX <= margin || hook.tipX >= viewWidth - margin;
+            const reachedMax = hook.length >= hook.maxLength;
+
+            if (reachedBottom || reachedSide || reachedMax) {
+              hook.state = HOOK_STATE.RETRACTING;
+              hook.caughtFish = null;
+              Sound.playMiss();
+            } else {
+              // Collision Check with Fish
+              for (let i = 0; i < fishes.length; i++) {
+                const fish = fishes[i];
+                if (fish.isHooked) continue;
+
+                const dx = hook.tipX - fish.x;
+                const dy = hook.tipY - fish.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < fish.type.hitRadius + 6) {
+                  // Catch Fish!
+                  fish.isHooked = true;
+                  hook.caughtFish = fish;
+                  hook.state = HOOK_STATE.RETRACTING;
+
+                  Sound.playHookHit();
+                  spawnCatchSplash(hook.tipX, hook.tipY, 14);
+                  break;
+                }
+              }
+            }
+          } else if (hook.state === HOOK_STATE.RETRACTING) {
+            // Adjust retract speed (heavier fish reel slightly slower)
+            let speed = hook.retractSpeedBase;
+            if (hook.caughtFish) {
+              if (hook.caughtFish.type.points >= 50) speed *= 0.72; // Shark
+              else if (hook.caughtFish.type.points >= 25) speed *= 0.85;
+            }
+
+            hook.length = Math.max(hook.initialLength, hook.length - speed * dt);
+            hook.tipX = anchorX + Math.sin(hook.angle) * hook.length;
+            hook.tipY = anchorY + Math.cos(hook.angle) * hook.length;
+
+            // Update attached hooked fish position
+            if (hook.caughtFish) {
+              hook.caughtFish.x = hook.tipX;
+              hook.caughtFish.y = hook.tipY + 6;
+            }
+
+            // Hook has returned to boat rod tip
+            if (hook.length <= hook.initialLength) {
+              if (hook.caughtFish) {
+                const caught = hook.caughtFish;
+                const pts = caught.type.points;
+
+                // Award score & update stats
+                score += pts;
+                totalCatches += 1;
+                caughtCounts[caught.type.id] += 1;
+
+                scoreDisplay.textContent = score;
+                catchDisplay.textContent = totalCatches;
+
+                cardScore.classList.add('score-pulse');
+                setTimeout(() => cardScore.classList.remove('score-pulse'), 300);
+
+                Sound.playCatchScore(pts);
+                spawnFloatingScore(anchorX, anchorY - 15, `+${pts} ${caught.type.emoji}`);
+                spawnCatchSplash(anchorX, anchorY, 16);
+
+                // Remove caught fish from active list and spawn replacement
+                const idx = fishes.indexOf(caught);
+                if (idx !== -1) fishes.splice(idx, 1);
+                fishes.push(createFish());
+
+                hook.caughtFish = null;
+              }
+
+              // Return to swinging state
+              hook.state = HOOK_STATE.SWINGING;
+            }
+          }
+
+          // 4. Update Swimming Fish
+          for (let i = 0; i < fishes.length; i++) {
+            const fish = fishes[i];
+            if (fish.isHooked) continue;
+
+            fish.x += fish.vx * dt;
+            fish.y = fish.baseY + Math.sin(now * fish.swimFreq + fish.swimPhase) * fish.swimAmp;
+
+            // Wrap around / respawn when fish exits screen
+            const outMargin = 60;
+            if ((fish.direction === 1 && fish.x > viewWidth + outMargin) ||
+                (fish.direction === -1 && fish.x < -outMargin)) {
+              // Recycle fish from opposite side
+              const refreshed = createFish(fish.direction);
+              fishes[i] = refreshed;
+            }
+          }
+
+          // 5. Update Ambient Bubbles
+          for (let b of bubbles) {
+            b.y -= b.speed * dt;
+            b.x += Math.sin(now * b.wobbleSpeed + b.phase) * (b.wobbleAmp * dt);
+            if (b.y < waterLineY) {
+              b.y = viewHeight + 10;
+              b.x = Math.random() * viewWidth;
+            }
+          }
+
+          // 6. Update Splash Particles
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.alpha -= p.decay * dt;
+            if (p.alpha <= 0) {
+              particles.splice(i, 1);
+            }
+          }
+
+          // 7. Update Floating Score Badges
+          for (let i = floatingScores.length - 1; i >= 0; i--) {
+            const f = floatingScores[i];
+            f.y += f.vy * dt;
+            f.alpha -= 0.9 * dt;
+            if (f.alpha <= 0) {
+              floatingScores.splice(i, 1);
+            }
+          }
+        }
+
+        // --- Render Engine ---
+        function render() {
+          ctx.clearRect(0, 0, viewWidth, viewHeight);
+
+          const now = performance.now() * 0.001;
+
+          // 1. Sky Area
+          const skyGrad = ctx.createLinearGradient(0, 0, 0, waterLineY);
+          skyGrad.addColorStop(0, '#7dd3fc');
+          skyGrad.addColorStop(1, '#bae6fd');
+          ctx.fillStyle = skyGrad;
+          ctx.fillRect(0, 0, viewWidth, waterLineY);
+
+          // Sun & Soft Clouds in Sky
+          ctx.save();
+          ctx.fillStyle = 'rgba(254, 240, 138, 0.45)';
+          ctx.beginPath();
+          ctx.arc(viewWidth * 0.82, waterLineY * 0.38, 28, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath();
+          ctx.arc(viewWidth * 0.82, waterLineY * 0.38, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Small soft cloud
+          ctx.font = '24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const cloudX = ((now * 12) % (viewWidth + 80)) - 40;
+          ctx.fillText('☁️', cloudX, waterLineY * 0.35);
+          ctx.fillText('☁️', ((cloudX + viewWidth * 0.6) % (viewWidth + 80)) - 40, waterLineY * 0.55);
+          ctx.restore();
+
+          // 2. Ocean Gradient Background
+          const oceanGrad = ctx.createLinearGradient(0, waterLineY, 0, viewHeight);
+          oceanGrad.addColorStop(0, '#0284c7'); // Bright azure surface
+          oceanGrad.addColorStop(0.4, '#0369a1'); // Deep sapphire
+          oceanGrad.addColorStop(1, '#082f49'); // Midnight sea floor
+          ctx.fillStyle = oceanGrad;
+          ctx.fillRect(0, waterLineY, viewWidth, viewHeight - waterLineY);
+
+          // Subtle sunbeams / light caustics in upper water
+          ctx.save();
+          ctx.fillStyle = 'rgba(224, 242, 254, 0.05)';
+          for (let i = 0; i < 4; i++) {
+            const beamX = (viewWidth * 0.25 * i + Math.sin(now * 0.8 + i) * 20);
+            ctx.beginPath();
+            ctx.moveTo(beamX, waterLineY);
+            ctx.lineTo(beamX + 45, viewHeight);
+            ctx.lineTo(beamX - 15, viewHeight);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // 3. Ambient Bubbles
+          ctx.save();
+          for (let b of bubbles) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          // 4. Seabed Details (Seaweeds & Coral Rocks)
+          ctx.save();
+          ctx.font = '22px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          const plantCount = Math.floor(viewWidth / 55);
+          for (let i = 0; i < plantCount; i++) {
+            const px = (i + 0.5) * (viewWidth / plantCount);
+            const sway = Math.sin(now * 1.5 + i) * 3;
+            ctx.save();
+            ctx.translate(px, viewHeight - 2);
+            ctx.rotate(sway * 0.03);
+            ctx.fillText('🌿', 0, 0);
+            ctx.restore();
+          }
+          ctx.restore();
+
+          // 5. Swimming Fish Emojis
+          ctx.save();
+          for (let fish of fishes) {
+            ctx.save();
+            ctx.translate(fish.x, fish.y);
+
+            // Most fish emojis face left by default.
+            // When moving to the right (direction = 1), scale X by -1 so it faces right!
+            if (fish.direction === 1) {
+              ctx.scale(-1, 1);
+            }
+
+            // Slight swimming wobble
+            const swimTilt = Math.sin(now * fish.swimFreq * 2 + fish.swimPhase) * 0.08;
+            ctx.rotate(swimTilt);
+
+            ctx.font = `${fish.type.size}px -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(fish.type.emoji, 0, 0);
+
+            // Optional points tag below fish
+            if (!fish.isHooked) {
+              ctx.font = 'bold 9px "Plus Jakarta Sans", sans-serif';
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+              ctx.fillText(`${fish.type.points}p`, 0, fish.type.size * 0.6);
+            }
+
+            ctx.restore();
+          }
+          ctx.restore();
+
+          // 6. Water Surface Waves
+          ctx.save();
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+          ctx.beginPath();
+          ctx.moveTo(0, waterLineY);
+          for (let x = 0; x <= viewWidth; x += 10) {
+            const waveY = waterLineY + Math.sin(x * 0.04 + now * 3) * 4;
+            ctx.lineTo(x, waveY);
+          }
+          ctx.lineTo(viewWidth, waterLineY + 20);
+          ctx.lineTo(0, waterLineY + 20);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#e0f2fe';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let x = 0; x <= viewWidth; x += 10) {
+            const waveY = waterLineY + Math.sin(x * 0.04 + now * 3) * 3;
+            if (x === 0) ctx.moveTo(x, waveY);
+            else ctx.lineTo(x, waveY);
+          }
+          ctx.stroke();
+          ctx.restore();
+
+          // 7. Fishing Line & Hook
+          const anchorX = boat.x + boat.rodOffsetX;
+          const anchorY = boat.y + boat.rodOffsetY + boat.bobOffset;
+
+          ctx.save();
+          // Fishing Line
+          ctx.strokeStyle = '#f8fafc';
+          ctx.lineWidth = 1.8;
+          ctx.shadowColor = 'rgba(0,0,0,0.25)';
+          ctx.shadowBlur = 3;
+          ctx.beginPath();
+          ctx.moveTo(anchorX, anchorY);
+          ctx.lineTo(hook.tipX, hook.tipY);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Hook (🪝) at Line Tip
+          ctx.save();
+          ctx.translate(hook.tipX, hook.tipY);
+          ctx.rotate(hook.angle);
+          ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillText('🪝', 0, -2);
+          ctx.restore();
+          ctx.restore();
+
+          // 8. Boat (⛵) at Surface
+          ctx.save();
+          ctx.translate(boat.x, boat.y + boat.bobOffset);
+          ctx.rotate(boat.tiltAngle);
+
+          // Boat Water Ripple
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.ellipse(0, 16, 26, 6, 0, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Boat Sailboat Emoji
+          ctx.font = `${boat.size}px -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(boat.emoji, 0, 0);
+
+          // Little Fishing Rod Extender
+          ctx.strokeStyle = '#78350f';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(boat.rodOffsetX - 12, boat.rodOffsetY + 6);
+          ctx.lineTo(boat.rodOffsetX, boat.rodOffsetY);
+          ctx.stroke();
+
+          ctx.restore();
+
+          // 9. Splash & Hit Particles
+          ctx.save();
+          for (let p of particles) {
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // 10. Floating Score Texts
+          ctx.save();
+          for (let f of floatingScores) {
+            ctx.font = '800 16px "Plus Jakarta Sans", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = f.color;
+            ctx.globalAlpha = Math.max(0, f.alpha);
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 4;
+            ctx.fillText(f.text, f.x, f.y);
+          }
+          ctx.restore();
+        }
+
+        // --- Game Main Loop ---
+        function gameLoop(timestamp) {
+          const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+          lastTime = timestamp;
+
+          updateGame(dt);
+          render();
+
+          if (isRunning) {
+            requestAnimationFrame(gameLoop);
+          }
+        }
+
+        // --- Game Flow Methods ---
+        function startGame() {
+          score = 0;
+          gameTime = 60;
+          totalCatches = 0;
+          secondTimer = 0;
+          caughtCounts = { fish1: 0, fish2: 0, fish3: 0, fish4: 0 };
+
+          scoreDisplay.textContent = '0';
+          timeDisplay.textContent = '60s';
+          catchDisplay.textContent = '0';
+          cardTimer.classList.remove('timer-critical');
+
+          hook.state = HOOK_STATE.SWINGING;
+          hook.angle = 0;
+          hook.swingTimer = 0;
+          hook.length = hook.initialLength;
+          hook.caughtFish = null;
+
+          particles = [];
+          floatingScores = [];
+
+          populateInitialFish();
+          initBubbles();
+
+          gameOverModal.style.display = 'none';
+          isRunning = true;
+          lastTime = performance.now();
+          requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+          isRunning = false;
+          Sound.playGameOver();
+
+          // Update High Score
+          let isNewHigh = false;
+          if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('mancing_mania_high_score', highScore.toString());
+            isNewHigh = true;
+          }
+
+          // Populate Game Over Modal
+          finalScoreEl.textContent = score;
+          highScoreBadge.textContent = isNewHigh
+            ? '🎉 REKOR TERBAIK BARU!'
+            : `Rekor Terbaik: ${highScore} poin`;
+
+          modalIcon.textContent = isNewHigh ? '👑' : (score >= 150 ? '🌟' : '🏆');
+
+          countFish1.textContent = caughtCounts.fish1;
+          countFish2.textContent = caughtCounts.fish2;
+          countFish3.textContent = caughtCounts.fish3;
+          countFish4.textContent = caughtCounts.fish4;
+
+          gameOverModal.style.display = 'flex';
+        }
+
+        // --- Event Listeners ---
+        function initEvents() {
+          // Responsive resize
+          window.addEventListener('resize', () => {
+            resizeCanvas();
+            render();
+          });
+
+          // Tap to shoot hook (pointerdown handles both click and mobile touch swiftly)
+          canvasWrapper.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            triggerHookLaunch();
+          });
+
+          // Prevent default touch behaviors that cause delay or scroll
+          canvasWrapper.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            triggerHookLaunch();
+          }, { passive: false });
+
+          // Restart button
+          restartBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            getAudioContext();
+            startGame();
+          });
+
+          restartBtn.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            getAudioContext();
+            startGame();
+          }, { passive: true });
+
+          // Sound Toggle Button
+          soundBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isSoundEnabled = !isSoundEnabled;
+            soundBtn.textContent = isSoundEnabled ? '🔊' : '🔇';
+            soundBtn.title = isSoundEnabled ? 'Suara Nyala' : 'Suara Mati';
+            if (isSoundEnabled) {
+              getAudioContext();
+            }
+          });
+        }
+
+        // --- Initialize Game on DOM Ready ---
+        window.addEventListener('DOMContentLoaded', () => {
+          resizeCanvas();
+          initEvents();
+          startGame();
+        });
+
+      })();
+    </script>
+  </body>
+</html>

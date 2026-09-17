@@ -1,0 +1,6 @@
+{
+  "name": "Mancing Mania Emoji",
+  "description": "Game web memancing seru bertema emoji dengan ayunan pendulum kail, aneka jenis ikan, dan grafis canvas responsif.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
